@@ -200,25 +200,29 @@ AI-Saju-Master/
 
 > 본 프로젝트는 체계적인 설계 단계를 거쳐 구축되었습니다. 각 번호를 클릭하면 상세 설계 문서로 이동합니다.
 
-1. **[01_서비스 기획 및 요구사항 정의 (concept_and_requirements.md)](./docs/01_concept.md)**
+## 📂 프로젝트 설계 문서 (Project Documentation)
+
+> 본 프로젝트는 체계적인 설계 단계를 거쳐 구축되었습니다. 각 번호를 클릭하면 상세 설계 문서로 이동합니다.
+
+1. **[01_서비스 기획 및 요구사항 정의 (01_concept_and_requirements.md)](./docs/01_concept_and_requirements.md)**
    - 서비스 핵심 가치, 타겟 분석 및 주요 기능 리스트
-2. **[02_서비스 및 메뉴 구조도 (service_structure.md)](./docs/02_service_structure.md)**
+2. **[02_서비스 및 메뉴 구조도 (02_service_flow.md)](./docs/02_service_flow.md)**
    - 사용자 경험(UX) 중심의 기능 배치 및 메뉴 트리
-3. **[03_시스템 아키텍처 및 데이터 흐름 (system_architecture.md)](./docs/03_system_architecture.md)**
+3. **[03_시스템 아키텍처 및 데이터 흐름 (03_system_architecture.md)](./docs/03_system_architecture.md)**
    - 3-Tier + AI Layer(RAG) 전체 시스템 구성 및 데이터 순환 구조
-4. **[04_데이터베이스 모델링 (db_modeling.md)](./docs/04_db_modeling.md)**
+4. **[04_데이터베이스 모델링 (04_db_design.md)](./docs/04_db_design.md)**
    - PostgreSQL 기반 논리/물리 ERD 및 테이블 상세 명세
-5. **[05_AI 추론 로직 및 RAG 설계 (ai_logic_design.md)](./docs/05_ai_logic.md)**
+5. **[05_AI 추론 로직 및 RAG 설계 (05_ai_logic.md)](./docs/05_ai_logic.md)**
    - 명리학 규칙과 LLM을 결합한 하이브리드 알고리즘 설계
-6. **[06_REST API 엔드포인트 설계 (api_design.md)](./docs/06_api_design.md)**
+6. **[06_REST API 엔드포인트 설계 (06_api_design.md)](./docs/06_api_design.md)**
    - 백엔드 서비스 제공을 위한 인터페이스 및 JSON 규격 정의
-7. **[07_LLM 프롬프트 디자인 (prompt_engineering.md)](./docs/07_prompt_design.md)**
+7. **[07_LLM 프롬프트 디자인 (07_prompt_design.md)](./docs/07_prompt_design.md)**
    - 사주 해석의 정확도와 일관성을 위한 프롬프트 최적화 전략
-8. **[08_비즈니스 모델 및 운영 전략 (business_strategy.md)](./docs/08_business_model.md)**
+8. **[08_비즈니스 모델 및 운영 전략 (08_business_model.md)](./docs/08_business_model.md)**
    - API 비용 최적화 및 지속 가능한 서비스 운영 방안
-9. **[09_개발 로드맵 및 마일스톤 (development_roadmap.md)](./docs/09_roadmap.md)**
+9. **[09_개발 로드맵 및 마일스톤 (09_roadmap.md)](./docs/09_roadmap.md)**
    - Phase별 구현 계획 및 핵심 마일스톤 설정
-10. **[10_트러블슈팅 및 로그 (troubleshooting_log.md)](./docs/10_troubleshooting.md)**
+10. **[10_트러블슈팅 및 로그 (10_troubleshooting_log.md)](./docs/10_troubleshooting_log.md)**
     - 개발 과정에서 발생한 기술적 문제와 해결 과정의 기록
 
 ---
