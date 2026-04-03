@@ -1,0 +1,29 @@
+# --- [ 1. Python 관련 ] ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+build/
+dist/
+
+# --- [ 2. 환경 변수 및 보안 (매우 중요!) ] ---
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+secrets.json
+
+# --- [ 3. 데이터베이스 및 로그 ] ---
+*.log
+*.sqlite3
+/db_data/
+.db
+
+# --- [ 4. 에디터 및 OS 관련 ] ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
