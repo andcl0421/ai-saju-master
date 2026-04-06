@@ -2,15 +2,15 @@
 
 ## 1. 개요 (Introduction)
 본 문서는 '만세력 AI 서비스'의 데이터 구조를 정의한다.  
-이메일 기반 사용자 식별 구조를 채택하여 확장성, 성능, 그리고 AI 비용 최적화에 초점을 맞추어 설계되었다.
+**이메일(Email) 기반 사용자 식별 구조**를 채택하여 단순성, 성능, 그리고 데이터 일관성에 초점을 맞추어 설계되었다.
 
 ---
 
 ## 2. 설계 원칙 (Design Principles)
-* **Identity**: 이메일 기반 사용자 식별을 통한 계정 관리 및 데이터 복구 기능 제공.
-* **Performance**: 사주 간지(Ganji) 데이터를 프로필에 캐싱하여 AI 추론 속도 향상.
-* **Cost-Efficiency**: 문장 재료(`fortune_phrases`) 테이블을 활용한 조립식 운세 생성으로 LLM 토큰 비용 절감.
-* **Reliability**: 날짜별 결과 저장 및 상세 로그 기록을 통한 데이터 일관성 유지.
+* **Email Identity**: UUID 대신 이메일을 사용자 식별자로 사용하여 조인(Join) 구조를 단순화.
+* **Performance**: 사주 간지(Ganji) 데이터를 프로필 테이블에 캐싱하여 만세력 계산 부하 최소화.
+* **Cost-Efficiency**: 문구 조합(`fortune_phrases`) 방식으로 LLM 토큰 사용량 최적화.
+* **Reliability**: `UNIQUE (profile_id, target_date)` 제약으로 하루 1회 운세 생성 보장.
 
 ---
 
@@ -19,23 +19,19 @@
 ### ① `users` (사용자 계정)
 | 컬럼명 | 타입 | 제약 조건 | 설명 |
 | :--- | :--- | :--- | :--- |
-| **user_id** | INT | PK, AUTO_INCREMENT | 사용자 고유 식별자 |
-| **email** | VARCHAR(100) | UNIQUE, NOT NULL | 사용자 이메일 (계정 식별용) |
+| **email** | VARCHAR(100) | **PK** | 사용자 이메일 (유일 식별자) |
 | **created_at** | TIMESTAMP | DEFAULT NOW() | 계정 생성 일시 |
 | **last_login** | TIMESTAMP | - | 최근 접속 일시 |
-
----
 
 ### ② `saju_profiles` (사주 정보)
 | 컬럼명 | 타입 | 제약 조건 | 설명 |
 | :--- | :--- | :--- | :--- |
 | **profile_id** | BIGINT | PK, AUTO_INCREMENT | 프로필 고유 번호 |
-| **user_id** | INT | FK (users.user_id) | 사용자 계정 연결 |
+| **user_email** | VARCHAR(100) | **FK (users.email)** | 사용자 계정(이메일) 연결 |
 | **nickname** | VARCHAR(50) | NOT NULL | 별명 (나, 가족, 친구 등) |
 | **birth_date** | DATE | NOT NULL | 생년월일 |
-| **birth_time** | VARCHAR(10) | - | 태어난 시간 ('00:00' 또는 '모름') |
+| **birth_time** | VARCHAR(10) | **DEFAULT 'UNKNOWN'** | 태어난 시간 ('00:00' 또는 'UNKNOWN') |
 | **gender** | ENUM | 'MALE', 'FEMALE' | 성별 |
-| **calendar_type** | ENUM | 'SOLAR', 'LUNAR' | 양력/음력 구분 |
 | **year_ganji** | VARCHAR(10) | - | [캐싱] 연 간지 |
 | **month_ganji** | VARCHAR(10) | - | [캐싱] 월 간지 |
 | **day_ganji** | VARCHAR(10) | - | [캐싱] 일 간지 |
@@ -67,13 +63,13 @@
 | 컬럼명 | 타입 | 제약 조건 | 설명 |
 | :--- | :--- | :--- | :--- |
 | **phrase_id** | BIGINT | PK | 문구 고유 ID |
-| **category** | VARCHAR(20) | - | 카테고리 |
-| **mood** | VARCHAR(10) | - | 분위기 |
+| **category** | VARCHAR(20) | - | 인사말,재물운,연애운 등 |
+| **mood** | VARCHAR(10) | - | 분위기(긍정,보통,주의) |
 | **content** | TEXT | NOT NULL | 실제 문구 내용 |
 
 ---
 
-### ⑤ `push_subscriptions` (푸시 알림 설정)
+### ⑤ `push_subscriptions` (푸시 알림 설정)[추후 구현 예정]
 | 컬럼명 | 타입 | 제약 조건 | 설명 |
 | :--- | :--- | :--- | :--- |
 | **sub_id** | BIGINT | PK | 구독 고유 ID |
@@ -96,9 +92,13 @@
 
 ---
 
-## 4. 인덱스(Index) 설계
-* `idx_users_email`: `users(email)`
-* `idx_profiles_user`: `saju_profiles(user_id)`
-* `idx_fortunes_date`: `daily_fortunes(target_date)`
-* `idx_push_user`: `push_subscriptions(user_id)`
-* `UNIQUE (profile_id, target_date)`
+## 4. 구현 시 주의사항 (Implementation Notes)
+* **Time Handling**: `birth_time`이 입력되지 않은 경우, 애플리케이션 로직에서 `None` 대신 `'UNKNOWN'` 문자열을 삽입한다.
+* **Initial Data**: `fortune_phrases` 테이블에는 서비스 가동 전 기초 운세 조각 데이터를 최소 20개 이상 Pre-load 해야 한다.
+
+---
+
+## 5. 인덱스(Index) 설계
+* `idx_profiles_email`: `saju_profiles(user_email)`
+* `idx_fortunes_lookup`: `UNIQUE (profile_id, target_date)`
+* `idx_push_email`: `push_subscriptions(user_email)`

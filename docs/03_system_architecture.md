@@ -1,79 +1,80 @@
 # 📂 03_system_architecture.md
-## System Architecture & Data Flow (v1.1 Final)
+## System Architecture & Data Flow (v1.2 Final)
 
 ---
 
 ## 1. 개요 (Overview)
-본 문서는 '만세력 AI 서비스'의 전체 시스템 구성과 구성 요소 간의 상호작용, 그리고 데이터 흐름(Data Flow)을 정의한다. 본 시스템은 **3-Tier Architecture + AI Layer (RAG + LLM)** 구조를 기반으로 설계된다.
+본 문서는 '만세력 AI 서비스'의 전체 시스템 구성과 데이터 흐름을 정의한다. 
+사용자 식별은 **이메일(Email)**을 유일한 식별자로 사용하며, 별도의 프레임워크(LangChain 등) 없이 **OpenAI 네이티브 Function Calling**을 통해 사주 계산 및 분석 도구를 직접 제어한다.
 
 ---
 
 ## 2. 시스템 구성도 (System Diagram)
 ```
 [ Client Layer ]
-    React / Web / App
-          ↓ ↑
+    React (SPA)
+          ↓ ↑ (REST API / JSON)
+
 [ Application Layer ]
-    FastAPI (REST API Server)
+    FastAPI (Back-end Server)
           ↓
- ┌───────────────────────────────┐
- │        Data Layer             │
- │   PostgreSQL (Main DB)        │
- └───────────────┬───────────────┘
-                 ↓
-        [ AI Intelligence Layer ]
-      LLM (OpenAI / Claude API)
-                 ↓
-        [ Vector Database ]
-      ChromaDB / Pinecone
+
+ ┌──────────────────────────────────────┐
+ │           AI & Data Layer            │
+ │                                      │
+ │  - PostgreSQL (User / Profiles / Logs)│
+ │  - ChromaDB (RAG Knowledge)          │
+ │                                      │
+ │  - OpenAI API (LLM + Function Calling)│
+ │  - Tool Layer (Ganji / External Data)│
+ └──────────────────────────────────────┘
 ```
 
 ---
 
 ## 3. 핵심 구성 요소 (Components)
-| 구성 요소 | 역할 | 비고 |
-|:---|:---|:---|
-| **Frontend** | 사용자 입력 및 결과 UI | React / SPA |
-| **Backend** | 요청 처리, 비즈니스 로직 | FastAPI |
-| **Main DB** | 사용자, 프로필, 운세 저장 | PostgreSQL |
-| **Vector DB** | 사주 해석 규칙 저장 | ChromaDB / RAG |
-| **LLM API** | 운세 및 궁합 문장 생성 | OpenAI / Claude |
-| **Scheduler** | 매일 아침 운세 생성 트리거 | APScheduler |
-| **Push Server** | 푸시 알림 전송 | Firebase FCM |
+
+| 구성요소 | 역할 | 기술 스택 |
+| :--- | :--- | :--- |
+| **프론트엔드** | 사용자 입력 및 결과 시각화 | React |
+| **백엔드** | **Function Calling 직접 제어** 및 API 서빙 | FastAPI |
+| **메인 DB** | **이메일 기반 계정**, 프로필 및 운세 저장 | PostgreSQL |
+| **벡터 DB** | 명리 해석 규칙 및 지식 데이터 저장/검색 | ChromaDB (RAG) |
+| **LLM API** | **만세력 계산기 및 외부 도구 호출 판단** | OpenAI (GPT-4o) |
 
 ---
 
 ## 4. 데이터 흐름 (Data Flow)
 
-### 4.1 오늘의 운세 생성 흐름 (Daily Fortune Flow)
-`[Client]` → `[API Server]` → `[PostgreSQL (간지 조회)]` → `[Vector DB (RAG 검색)]` → `[LLM API (생성)]` → `[PostgreSQL (저장)]` → `[Client (반환)]`
+### 4.1 오늘의 운세 생성 (Direct Tool Flow)
+1. **사용자 확인:** 입력된 **이메일**로 `users` 테이블 조회 및 연결된 프로필 로드.
+2. **캐시 확인:** `daily_fortunes`에 오늘 날짜 데이터가 있는지 확인 (있으면 즉시 반환).
+3. **도구 판단 (Function Calling):** LLM이 분석에 필요한 만세력 도구(`get_ganji`) 등을 호출하도록 백엔드가 직접 제어.
+4. **지식 보강 (RAG):** 도구 결과값을 키워드로 벡터 DB에서 관련 명리 해석문 검색.
+5. **저장 및 반환:** 최종 생성된 운세를 PostgreSQL에 저장 후 클라이언트에 응답.
 
 ### 4.2 궁합 분석 흐름 (Compatibility Flow)
-- **특징**: Stateless 처리, 비용 최적화, 빠른 응답.
-- **흐름**: 프로필 A/B 조회 후 LLM 분석 결과 즉시 반환 (**DB 저장 없음**).
-
-### 4.3 푸시 알림 및 스케줄러 흐름 (Push Flow)
-- **특징**: 자동 운세 생성, 캐싱 활용 (중복 생성 방지).
-- **흐름**: 스케줄러 트리거 → 대표 프로필 조회 → 운세 생성/조회 → FCM 전송.
+- **특징**: Stateless(무상태) 처리, 실시간 분석.
+- **흐름**: 프로필 A/B 조회 → LLM 분석(Function Calling) → 결과 즉시 반환 (**DB 저장 안 함**).
 
 ---
 
 ## 5. 인프라 및 운영 설계 (Infrastructure)
-- **Container**: Docker / Docker Compose
+- **Container**: Docker / Docker Compose (로컬 및 운영 환경 통일)
 - **Cloud**: AWS EC2 (Server), AWS RDS (PostgreSQL)
-- **CI/CD**: GitHub Actions
-- **Monitoring**: AI API 사용량 추적 및 에러 로그 트래킹
+- **CI/CD**: GitHub Actions (자동 배포)
+- **Monitoring**: AI API 사용량(Token) 추적 및 에러 로그 트래킹
 
 ---
 
 ## 6. 아키텍처 핵심 특징 (Key Characteristics)
-1. **Hybrid AI 구조**: RAG와 LLM의 결합으로 비용 절감 및 해석 품질 향상.
-2. **캐싱 전략**: `(profile_id, target_date)` 기반으로 동일 일자 운세 재사용.
-3. **Stateless API**: 궁합 분석 등 일회성 데이터는 저장하지 않아 서버 부하 최소화.
-4. **확장성**: 모듈화된 설계를 통해 AI 모델 및 DB의 유연한 교체 가능.
+1. **No Framework**: 랭체인/랭그래프를 사용하지 않아 오버헤드가 없고 디버깅이 직관적임.
+2. **Email Identity**: UUID 대신 이메일을 유니크 키로 사용하여 사용자 관리 단순화.
+3. **Hybrid AI 구조**: RAG와 LLM의 결합으로 답변 신뢰도 향상 및 비용 절감.
+4. **캐싱 전략**: 동일 일자 운세 재사용을 통한 API 호출 최소화.
 
 ---
 
 ## 7. 현재 상태 및 요약
-- **Summary**: `User → API → DB → RAG → LLM → DB 저장 → 응답`
-- **Status**: **설계 완료 (구현 대기 상태)**
+- **Summary**: `이메일 입력 → 프로필 조회 → 도구 호출(AI) → 결과 저장 → 응답`
+- **Status**: **설계 완료 (이메일 식별 및 네이티브 Function Calling 구조 확정)**
