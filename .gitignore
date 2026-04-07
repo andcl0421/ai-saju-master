@@ -1,29 +1,60 @@
-# --- [ 1. Python 관련 ] ---
+# ☯️ Saju Master AI: Standard .gitignore
+
+# --- [1] Python & Backend (FastAPI, uv, Alembic) ---
 __pycache__/
 *.py[cod]
 *$py.class
-venv/
+.env
 .venv/
 env/
+venv/
+ENV/
 build/
 dist/
+*.egg-info/
+.python-version
 
-# --- [ 2. 환경 변수 및 보안 (매우 중요!) ] ---
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-secrets.json
+# Alembic (DB 마이그레이션 캐시)
+versions/__pycache__/
 
-# --- [ 3. 데이터베이스 및 로그 ] ---
-*.log
+# --- [2] Frontend (React, Node.js) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp*
+.pnp.js
+dist/
+build/
+.eslintcache
+.next/
+out/
+
+# --- [3] Databases & Storage (PostgreSQL, Vector DB) ---
+*.db
 *.sqlite3
-/db_data/
-.db
+# 로컬 테스트용 데이터베이스 파일이 생성될 경우 제외
+postgres-data/
+vector-db-data/
+data/
 
-# --- [ 4. 에디터 및 OS 관련 ] ---
+# --- [4] AI & RAG (OpenAI, Vector Store) ---
+# 로컬에 저장된 벡터 인덱스 파일들 (FAISS, Chroma 등)
+*.index
+*.pkl
+.chroma/
+
+# --- [5] Editor & OS (VS Code, Cursor, Mac/Win) ---
 .vscode/
 .idea/
+*.swp
+*.swo
 .DS_Store
 Thumbs.db
+
+# --- [6] Logs & Credentials ---
+*.log
+logs/
+auth_token.txt
+*.pem
+*.key

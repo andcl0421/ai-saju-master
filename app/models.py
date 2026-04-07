@@ -1,1 +1,0 @@
-# DB 테이블 정의 (SQLAlchemy)

@@ -16,79 +16,96 @@
 
 ## 3. 테이블 상세 설계
 
-### ① `users` (사용자 계정)
-| 컬럼명 | 타입 | 제약 조건 | 설명 |
-| :--- | :--- | :--- | :--- |
-| **email** | VARCHAR(100) | **PK** | 사용자 이메일 (유일 식별자) |
-| **created_at** | TIMESTAMP | DEFAULT NOW() | 계정 생성 일시 |
-| **last_login** | TIMESTAMP | - | 최근 접속 일시 |
+### ① users (사용자 계정)
+- **존재 이유**: 서비스 이용자 식별 및 로그인 연동을 위한 기초 데이터 관리
+- **관계성**: 1:N (saju_profiles, push_subscriptions)
 
-### ② `saju_profiles` (사주 정보)
-| 컬럼명 | 타입 | 제약 조건 | 설명 |
-| :--- | :--- | :--- | :--- |
-| **profile_id** | BIGINT | PK, AUTO_INCREMENT | 프로필 고유 번호 |
-| **user_email** | VARCHAR(100) | **FK (users.email)** | 사용자 계정(이메일) 연결 |
-| **nickname** | VARCHAR(50) | NOT NULL | 별명 (나, 가족, 친구 등) |
-| **birth_date** | DATE | NOT NULL | 생년월일 |
-| **birth_time** | VARCHAR(10) | **DEFAULT 'UNKNOWN'** | 태어난 시간 ('00:00' 또는 'UNKNOWN') |
-| **gender** | ENUM | 'MALE', 'FEMALE' | 성별 |
-| **year_ganji** | VARCHAR(10) | - | [캐싱] 연 간지 |
-| **month_ganji** | VARCHAR(10) | - | [캐싱] 월 간지 |
-| **day_ganji** | VARCHAR(10) | - | [캐싱] 일 간지 |
-| **time_ganji** | VARCHAR(10) | - | [캐싱] 시 간지 |
-| **is_primary** | BOOLEAN | DEFAULT FALSE | 대표 프로필 여부 (푸시 대상) |
+| 구분 | 컬럼명 | 역할 | 타입/옵션 | 출처 | 비고 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **PK** | **email** | 사용자 이메일 | VARCHAR(100), N | 소셜 연동 | 유일 식별자 |
+| **일반** | **created_at** | 가입 일시 | TIMESTAMP, N | 시스템 | Server Default: CURRENT_TIMESTAMP |
+| **일반** | **last_login** | 최근 접속 일시 | TIMESTAMP, Y | 시스템 | 최근 활동 추적용 |
 
 ---
 
-### ③ `daily_fortunes` (오늘의 운세 결과)
-| 컬럼명 | 타입 | 제약 조건 | 설명 |
-| :--- | :--- | :--- | :--- |
-| **fortune_id** | BIGINT | PK, AUTO_INCREMENT | 운세 고유 ID |
-| **profile_id** | BIGINT | FK (saju_profiles.profile_id) | 해당 사주 프로필 연결 |
-| **target_date** | DATE | NOT NULL | 운세 날짜 |
-| **fortune_score** | INT | 0~100 | 종합 운세 점수 |
-| **money_score** | INT | 0~100 | 재물운 세부 점수 |
-| **love_score** | INT | 0~100 | 연애운 세부 점수 |
-| **health_score** | INT | 0~100 | 건강운 세부 점수 |
-| **work_score** | INT | 0~100 | 직장/학업운 세부 점수 |
-| **content** | TEXT | NOT NULL | 최종 운세 본문 |
-| **luck_item** | VARCHAR(100) | - | 오늘의 행운 아이템 |
-| **created_at** | TIMESTAMP | DEFAULT NOW() | 데이터 생성 시점 |
+### ② saju_profiles (사주 정보)
+- **존재 이유**: 사용자별 사주 정보를 저장하고 간지 데이터를 캐싱하여 계산 부하 감소
+- **관계성**: N:1 (users), 1:N (daily_fortunes, fortune_logs)
 
-> **Constraint**: `UNIQUE (profile_id, target_date)` - 중복 생성 방지
-
----
-
-### ④ `fortune_phrases` (운세 문장 재료)
-| 컬럼명 | 타입 | 제약 조건 | 설명 |
-| :--- | :--- | :--- | :--- |
-| **phrase_id** | BIGINT | PK | 문구 고유 ID |
-| **category** | VARCHAR(20) | - | 인사말,재물운,연애운 등 |
-| **mood** | VARCHAR(10) | - | 분위기(긍정,보통,주의) |
-| **content** | TEXT | NOT NULL | 실제 문구 내용 |
+| 구분 | 컬럼명 | 역할 | 타입/옵션 | 출처 | 비고 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **PK** | **profile_id** | 프로필 식별자 | BIGINT, N | 시스템 | Auto Increment |
+| **FK** | **user_email** | 사용자 연결 | VARCHAR(100), N | 시스템 | users.email 참조 |
+| **일반** | **nickname** | 활동명(별명) | VARCHAR(50), N | 사용자 입력 | 나, 가족, 친구 등 구분 |
+| **일반** | **birth_date** | 생년월일 | DATE, N | 사용자 입력 | - |
+| **일반** | **birth_time** | 태어난 시간 | VARCHAR(10), N | 사용자 입력 | 기본값: 'UNKNOWN' |
+| **일반** | **gender** | 성별 | ENUM, N | 사용자 입력 | MALE, FEMALE |
+| **일반** | **year_ganji** | 연 간지 | VARCHAR(10), Y | 시스템 | [캐싱] 만세력 계산 결과 |
+| **일반** | **month_ganji** | 월 간지 | VARCHAR(10), Y | 시스템 | [캐싱] 만세력 계산 결과 |
+| **일반** | **day_ganji** | 일 간지 | VARCHAR(10), Y | 시스템 | [캐싱] 만세력 계산 결과 |
+| **일반** | **time_ganji** | 시 간지 | VARCHAR(10), Y | 시스템 | [캐싱] 만세력 계산 결과 |
+| **일반** | **is_primary** | 대표 프로필 여부 | BOOLEAN, N | 사용자 입력 | 기본값: False (푸시 알림 대상) |
 
 ---
 
-### ⑤ `push_subscriptions` (푸시 알림 설정)[추후 구현 예정]
-| 컬럼명 | 타입 | 제약 조건 | 설명 |
-| :--- | :--- | :--- | :--- |
-| **sub_id** | BIGINT | PK | 구독 고유 ID |
-| **user_id** | INT | FK (users.user_id) | 사용자 계정 연결 |
-| **fcm_token** | VARCHAR(255) | UNIQUE | 기기 고유 토큰 |
-| **is_active** | BOOLEAN | DEFAULT TRUE | 알림 활성 여부 |
-| **created_at** | TIMESTAMP | DEFAULT NOW() | 구독 등록 일시 |
+### ③ daily_fortunes (오늘의 운세 결과)
+- **존재 이유**: 생성된 일일 운세 결과값 저장 및 중복 생성 방지
+- **관계성**: N:1 (saju_profiles)
+
+| 구분 | 컬럼명 | 역할 | 타입/옵션 | 출처 | 비고 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **PK** | **fortune_id** | 운세 고유 ID | BIGINT, N | 시스템 | Auto Increment |
+| **FK** | **profile_id** | 프로필 연결 | BIGINT, N | 시스템 | saju_profiles.profile_id 참조 |
+| **일반** | **target_date** | 운세 날짜 | DATE, N | 시스템 | Unique Index (profile_id와 조합) |
+| **일반** | **fortune_score** | 종합 점수 | INT, N | 시스템 | 0~100 |
+| **일반** | **money_score** | 재물운 점수 | INT, N | 시스템 | 0~100 |
+| **일반** | **love_score** | 연애운 점수 | INT, N | 시스템 | 0~100 |
+| **일반** | **health_score** | 건강운 점수 | INT, N | 시스템 | 0~100 |
+| **일반** | **work_score** | 학업/직장 점수 | INT, N | 시스템 | 0~100 |
+| **일반** | **content** | 운세 본문 | TEXT, N | 시스템 | 최종 생성 텍스트 |
+| **일반** | **luck_item** | 행운 아이템 | VARCHAR(100), Y | 시스템 | 추천 아이템 |
+| **일반** | **created_at** | 생성 시점 | TIMESTAMP, N | 시스템 | Default: CURRENT_TIMESTAMP |
+
+> **Constraint**: `UNIQUE (profile_id, target_date)` 적용
 
 ---
 
-### ⑥ `fortune_logs` (AI 추론 로그)
-| 컬럼명 | 타입 | 제약 조건 | 설명 |
-| :--- | :--- | :--- | :--- |
-| **log_id** | BIGINT | PK | 로그 고유 ID |
-| **profile_id** | BIGINT | FK (saju_profiles.profile_id) | 요청 사주 정보 연결 |
-| **prompt** | TEXT | - | AI에게 보낸 프롬프트 |
-| **response** | TEXT | - | AI 응답 원문 |
-| **target_date** | DATE | - | 기록 대상 날짜 |
-| **created_at** | TIMESTAMP | DEFAULT NOW() | 로그 생성 일시 |
+### ④ fortune_phrases (운세 문장 재료)
+- **존재 이유**: LLM 비용 절감 및 일관된 톤앤매너 유지를 위한 조립식 문구 관리
+
+| 구분 | 컬럼명 | 역할 | 타입/옵션 | 출처 | 비고 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **PK** | **phrase_id** | 문구 고유 ID | BIGINT, N | 시스템 | - |
+| **일반** | **category** | 문구 카테고리 | VARCHAR(20), N | 운영자 | 인사말, 재물운, 연애운 등 |
+| **일반** | **mood** | 분위기 상태 | VARCHAR(10), N | 운영자 | 긍정, 보통, 주의 |
+| **일반** | **content** | 실제 문구 내용 | TEXT, N | 운영자 | {name} 등 치환자 포함 가능 |
+
+---
+
+### ⑤ push_subscriptions (푸시 알림 설정)
+- **존재 이유**: 사용자의 기기별 알림 수신 상태 및 토큰 관리 (추후 구현 예정)
+
+| 구분 | 컬럼명 | 역할 | 타입/옵션 | 출처 | 비고 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **PK** | **sub_id** | 구독 고유 ID | BIGINT, N | 시스템 | - |
+| **FK** | **user_email** | 사용자 연결 | VARCHAR(100), N | 시스템 | users.email 참조 |
+| **일반** | **fcm_token** | 기기 토큰 | VARCHAR(255), N | 시스템 | Unique |
+| **일반** | **is_active** | 알림 활성 여부 | BOOLEAN, N | 사용자 설정 | 기본값: True |
+| **일반** | **created_at** | 구독 등록 일시 | TIMESTAMP, N | 시스템 | Default: NOW() |
+
+---
+
+### ⑥ fortune_logs (AI 추론 로그)
+- **존재 이유**: AI 응답 품질 모니터링 및 트러블슈팅을 위한 기록 보관
+
+| 구분 | 컬럼명 | 역할 | 타입/옵션 | 출처 | 비고 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **PK** | **log_id** | 로그 고유 ID | BIGINT, N | 시스템 | - |
+| **FK** | **profile_id** | 사주 정보 연결 | BIGINT, N | 시스템 | saju_profiles.profile_id 참조 |
+| **일반** | **prompt** | 요청 프롬프트 | TEXT, Y | 시스템 | AI 전송 데이터 |
+| **일반** | **response** | 응답 원문 | TEXT, Y | 시스템 | AI 수신 데이터 |
+| **일반** | **target_date** | 기록 대상 날짜 | DATE, Y | 시스템 | 운세 기준일 |
+| **일반** | **created_at** | 로그 생성 일시 | TIMESTAMP, N | 시스템 | Default: NOW() |
 
 ---
 
@@ -99,6 +116,6 @@
 ---
 
 ## 5. 인덱스(Index) 설계
-* `idx_profiles_email`: `saju_profiles(user_email)`
-* `idx_fortunes_lookup`: `UNIQUE (profile_id, target_date)`
-* `idx_push_email`: `push_subscriptions(user_email)`
+* `idx_profiles_email`: `saju_profiles(user_email)` - 사용자별 프로필 조회 최적화
+* `idx_fortunes_lookup`: `UNIQUE (profile_id, target_date)` - 일일 운세 조회 및 중복 방지
+* `idx_push_email`: `push_subscriptions(user_email)` - 알림 대상자 조회 최적화
