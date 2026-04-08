@@ -14,6 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 
+
 if TYPE_CHECKING:
     from app.models.saju import SajuProfile
 
@@ -46,6 +47,7 @@ class User(Base):
         passive_deletes=True,
         lazy="selectin",
     )
+
 
 
 class PushSubscription(Base):

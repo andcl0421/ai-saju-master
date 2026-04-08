@@ -44,6 +44,13 @@ class DailyFortune(Base):
     work_score: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     luck_item: Mapped[Optional[str]] = mapped_column(String(100))
+    # SUCCESS(성공) 또는 FAIL(실패) 상태 저장
+    status: Mapped[str] = mapped_column(
+        String(10), server_default="SUCCESS", nullable=False
+    )
+
+    # 실패 시 에러 메시지(예: AI_SERVER_TIMEOUT)를 기록하기 위한 컬럼
+    error_msg: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
