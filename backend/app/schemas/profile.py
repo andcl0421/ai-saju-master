@@ -1,34 +1,36 @@
-"""
-schemas/profile.py
-POST /profiles 요청/응답 스키마
-"""
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
-class ProfileCreate(BaseModel):
-    """POST /profiles 요청 바디"""
-
-    email: EmailStr
+class ProfileCreateRequest(BaseModel):
+    user_email: EmailStr
     nickname: str = Field(..., min_length=1, max_length=50)
     birth_date: date
-    birth_time: str = Field(
-        default="UNKNOWN",
-        description="HH:MM 형식 또는 'UNKNOWN'",
-        pattern=r"^(\d{2}:\d{2}|UNKNOWN)$",
-    )
+    birth_time: str = Field(default="UNKNOWN", pattern=r"^(\d{2}:\d{2}|UNKNOWN)$")
     gender: Literal["MALE", "FEMALE"]
     calendar_type: Literal["SOLAR", "LUNAR"] = "SOLAR"
     is_primary: bool = False
 
 
-class ProfileResponse(BaseModel):
-    """POST /profiles 응답"""
+class ProfileUpdateRequest(BaseModel):
+    nickname: str | None = Field(default=None, min_length=1, max_length=50)
+    birth_date: date | None = None
+    birth_time: str | None = Field(default=None, pattern=r"^(\d{2}:\d{2}|UNKNOWN)$")
+    gender: Literal["MALE", "FEMALE"] | None = None
+    calendar_type: Literal["SOLAR", "LUNAR"] | None = None
 
+
+class ProfileSummary(BaseModel):
+    profile_id: int
+    nickname: str
+    is_primary: bool
+
+
+class ProfileDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     profile_id: int
@@ -37,14 +39,64 @@ class ProfileResponse(BaseModel):
     birth_date: date
     birth_time: str
     gender: str
-    calendar_type: Optional[str] = None
-    year_ganji: Optional[str] = None
-    month_ganji: Optional[str] = None
-    day_ganji: Optional[str] = None
-    time_ganji: Optional[str] = None
+    calendar_type: str
+    year_ganji: str | None = None
+    month_ganji: str | None = None
+    day_ganji: str | None = None
+    time_ganji: str | None = None
     is_primary: bool
-    is_time_unknown: bool = Field(
-        default=False,
-        description="생시 미입력 여부 (프론트 안내 문구 표시용)",
-    )
+    is_time_unknown: bool
     created_at: datetime
+
+
+class ProfileCreateData(BaseModel):
+    profile_id: int
+    nickname: str
+
+
+class ProfileCreateResponse(BaseModel):
+    status: int
+    data: ProfileCreateData
+
+
+class ProfileListData(BaseModel):
+    user_email: str
+    profiles: list[ProfileSummary]
+
+
+class ProfileListResponse(BaseModel):
+    status: int
+    data: ProfileListData
+
+
+class ProfileDetailResponse(BaseModel):
+    status: int
+    data: ProfileDetail
+
+
+class ProfileUpdateData(BaseModel):
+    profile_id: int
+    updated_fields: list[str]
+
+
+class ProfileUpdateResponse(BaseModel):
+    status: int
+    message: str
+    data: ProfileUpdateData
+
+
+class PrimaryProfileData(BaseModel):
+    user_email: str
+    primary_profile_id: int
+    is_primary: bool
+
+
+class PrimaryProfileResponse(BaseModel):
+    status: int
+    message: str
+    data: PrimaryProfileData
+
+
+class MessageResponse(BaseModel):
+    status: int
+    message: str

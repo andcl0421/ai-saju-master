@@ -1,16 +1,18 @@
 from __future__ import annotations
-from datetime import date
+
+from datetime import date, datetime
 from enum import Enum as PyEnum
-from typing import List, Optional, TYPE_CHECKING
-from sqlalchemy import String, ForeignKey, Date, Boolean, Enum, BigInteger, Index, text
+from typing import TYPE_CHECKING
+
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, Enum, ForeignKey, Index, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.database import Base
 
-from app.models.fortune import DailyFortune
-
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.models.fortune import DailyFortune
     from app.models.log import FortuneLog
+    from app.models.user import User
 
 
 class Gender(str, PyEnum):
@@ -18,15 +20,16 @@ class Gender(str, PyEnum):
     FEMALE = "FEMALE"
 
 
-class SajuProfile(Base):
-    """사주 프로필 (간지 데이터 캐싱 포함)"""
+class CalendarType(str, PyEnum):
+    SOLAR = "SOLAR"
+    LUNAR = "LUNAR"
 
+
+class SajuProfile(Base):
     __tablename__ = "saju_profiles"
     __table_args__ = (Index("idx_profiles_email", "user_email"),)
 
-    profile_id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    profile_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     user_email: Mapped[str] = mapped_column(
         String(100),
         ForeignKey("users.email", ondelete="CASCADE"),
@@ -40,36 +43,44 @@ class SajuProfile(Base):
         server_default=text("'UNKNOWN'"),
     )
     gender: Mapped[Gender] = mapped_column(
+        Enum(Gender, native_enum=False, values_callable=lambda obj: [item.value for item in obj]),
+        nullable=False,
+    )
+    calendar_type: Mapped[CalendarType] = mapped_column(
         Enum(
-            Gender,
+            CalendarType,
             native_enum=False,
-            values_callable=lambda obj: [e.value for e in obj],
+            values_callable=lambda obj: [item.value for item in obj],
         ),
+        nullable=False,
+        server_default=CalendarType.SOLAR.value,
+    )
+
+    year_ganji: Mapped[str | None] = mapped_column(String(10))
+    month_ganji: Mapped[str | None] = mapped_column(String(10))
+    day_ganji: Mapped[str | None] = mapped_column(String(10))
+    time_ganji: Mapped[str | None] = mapped_column(String(10))
+
+    is_primary: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
         nullable=False,
     )
 
-    # 간지 데이터 (캐싱용)
-    year_ganji: Mapped[Optional[str]] = mapped_column(String(10))
-    month_ganji: Mapped[Optional[str]] = mapped_column(String(10))
-    day_ganji: Mapped[Optional[str]] = mapped_column(String(10))
-    time_ganji: Mapped[Optional[str]] = mapped_column(String(10))
-
-    is_primary: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default=text("false")
-    )
-
-    # 관계 설정
-    user: Mapped["User"] = relationship(
-        "User", back_populates="saju_profiles", lazy="selectin"
-    )
-    daily_fortunes: Mapped[List["DailyFortune"]] = relationship(
+    user: Mapped["User"] = relationship("User", back_populates="saju_profiles", lazy="selectin")
+    daily_fortunes: Mapped[list["DailyFortune"]] = relationship(
         "DailyFortune",
         back_populates="profile",
         cascade="all, delete-orphan",
         passive_deletes=True,
         lazy="selectin",
     )
-    fortune_logs: Mapped[List["FortuneLog"]] = relationship(
+    fortune_logs: Mapped[list["FortuneLog"]] = relationship(
         "FortuneLog",
         back_populates="profile",
         cascade="all, delete-orphan",
